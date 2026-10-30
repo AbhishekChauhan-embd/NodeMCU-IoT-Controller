@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:padding="24dp"
+    android:background="#F5F7FA">
+
+    ```
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="NodeMCU IoT Controller"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#172B4D"
+        android:layout_marginBottom="32dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="MQTT Connection"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#172B4D" />
+
+    <TextView
+        android:id="@+id/txtConnectionStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="● Disconnected"
+        android:textSize="16sp"
+        android:textColor="#D32F2F"
+        android:layout_margin="16dp" />
+
+    <EditText
+        android:id="@+id/edtMqttPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter MQTT Password"
+        android:inputType="textPassword"
+        android:padding="12dp"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnConnect"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="CONNECT" />
+
+    <Button
+        android:id="@+id/btnDisconnect"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="DISCONNECT"
+        android:layout_marginTop="8dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#CCCCCC"
+        android:layout_marginTop="28dp"
+        android:layout_marginBottom="28dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="LED CONTROL"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#172B4D" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Built-in LED"
+        android:textSize="18sp"
+        android:layout_marginTop="24dp"
+        android:textColor="#333333" />
+
+    <TextView
+        android:id="@+id/txtLedStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Current Status: OFF"
+        android:textSize="16sp"
+        android:textColor="#D32F2F"
+        android:layout_margin="16dp" />
+
+    <Button
+        android:id="@+id/btnLedOn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="LED ON" />
+
+    <Button
+        android:id="@+id/btnLedOff"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="LED OFF"
+        android:layout_marginTop="8dp" />
+    ```
+
+</LinearLayout>
