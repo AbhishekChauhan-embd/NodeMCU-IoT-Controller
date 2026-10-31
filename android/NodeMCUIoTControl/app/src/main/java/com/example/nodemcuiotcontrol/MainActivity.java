@@ -13,7 +13,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     // UI components
-    private TextView txtConnectionStatus;
+    private TextView txtBrokerStatus;
+    private TextView txtDeviceStatus;
     private TextView txtLedStatus;
 
     private EditText edtMqttPassword;
@@ -38,13 +39,15 @@ public class MainActivity extends AppCompatActivity {
 
         setupButtonListeners();
 
-        updateConnectionUI(false);
+        updateBrokerStatus(false);
+        updateDeviceStatus(false);
     }
 
     // Initialize UI components
     private void initializeViews() {
 
-        txtConnectionStatus = findViewById(R.id.txtConnectionStatus);
+        txtBrokerStatus = findViewById(R.id.txtBrokerStatus);
+        txtDeviceStatus = findViewById(R.id.txtDeviceStatus);
         txtLedStatus = findViewById(R.id.txtLedStatus);
 
         edtMqttPassword = findViewById(R.id.edtMqttPassword);
@@ -69,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
 
                             Log.d(TAG, "MQTT Connected");
 
-                            updateConnectionUI(true);
+                            updateBrokerStatus(true);
 
                             //showToast("Connected to EMQX");
                         });
@@ -82,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
 
                             Log.d(TAG, "MQTT Disconnected");
 
-                            updateConnectionUI(false);
+                            updateBrokerStatus(false);
 
                             showToast("MQTT Disconnected");
                         });
@@ -97,9 +100,7 @@ public class MainActivity extends AppCompatActivity {
 
                             showToast("MQTT Error: " + message);
 
-                            updateConnectionUI(
-                                    mqttManager.isConnected()
-                            );
+                            updateBrokerStatus(mqttManager.isConnected());
                         });
                     }
 
@@ -113,10 +114,10 @@ public class MainActivity extends AppCompatActivity {
                             if (topic.equals("abhishek/nodemcu-01/status")) {
 
                                 if (message.equalsIgnoreCase("online")) {
-                                    txtConnectionStatus.setText("● NodeMCU Online");
+                                    updateDeviceStatus(true);
                                 }
                                 else if (message.equalsIgnoreCase("offline")) {
-                                    txtConnectionStatus.setText("● NodeMCU Offline");
+                                    updateDeviceStatus(false);
                                 }
                             }
 
@@ -150,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            txtConnectionStatus.setText("Connecting...");
+            txtBrokerStatus.setText("Connecting...");
             btnConnect.setEnabled(false);
 
             mqttManager.connect(password);
@@ -176,19 +177,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Update connection-related UI
-    private void updateConnectionUI(boolean connected) {
+    // Update MQTT broker connection status
+    private void updateBrokerStatus(boolean connected) {
 
         if (connected) {
 
-            txtConnectionStatus.setText("● Connected");
-            txtConnectionStatus.setTextColor(
+            txtBrokerStatus.setText("● MQTT Broker: Connected");
+
+            txtBrokerStatus.setTextColor(
                     getColor(android.R.color.holo_green_dark)
             );
 
         } else {
 
-            txtConnectionStatus.setText("● Disconnected");
-            txtConnectionStatus.setTextColor(
+            txtBrokerStatus.setText("● MQTT Broker: Disconnected");
+
+            txtBrokerStatus.setTextColor(
                     getColor(android.R.color.holo_red_dark)
             );
         }
@@ -198,6 +202,28 @@ public class MainActivity extends AppCompatActivity {
 
         btnLedOn.setEnabled(connected);
         btnLedOff.setEnabled(connected);
+    }
+
+
+    // Update NodeMCU device status
+    private void updateDeviceStatus(boolean online) {
+
+        if (online) {
+
+            txtDeviceStatus.setText("● NodeMCU: Online");
+
+            txtDeviceStatus.setTextColor(
+                    getColor(android.R.color.holo_green_dark)
+            );
+
+        } else {
+
+            txtDeviceStatus.setText("● NodeMCU: Offline");
+
+            txtDeviceStatus.setTextColor(
+                    getColor(android.R.color.holo_red_dark)
+            );
+        }
     }
 
     // Display short messages

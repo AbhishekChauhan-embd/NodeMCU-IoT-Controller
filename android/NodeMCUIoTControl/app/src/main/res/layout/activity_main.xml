@@ -8,7 +8,6 @@
     android:padding="24dp"
     android:background="#F5F7FA">
 
-    ```
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -21,19 +20,29 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="MQTT Connection"
+        android:text="CONNECTION STATUS"
         android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="#172B4D" />
 
     <TextView
-        android:id="@+id/txtConnectionStatus"
+        android:id="@+id/txtBrokerStatus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="● Disconnected"
+        android:text="● MQTT Broker: Disconnected"
         android:textSize="16sp"
         android:textColor="#D32F2F"
-        android:layout_margin="16dp" />
+        android:layout_marginTop="16dp" />
+
+
+    <TextView
+        android:id="@+id/txtDeviceStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="● NodeMCU: Unknown"
+        android:textSize="16sp"
+        android:textColor="#757575"
+        android:layout_margin="12dp" />
 
     <EditText
         android:id="@+id/edtMqttPassword"
@@ -84,9 +93,9 @@
         android:id="@+id/txtLedStatus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Current Status: OFF"
+        android:text="Current Status: Unknown"
         android:textSize="16sp"
-        android:textColor="#D32F2F"
+        android:textColor="#757575"
         android:layout_margin="16dp" />
 
     <Button
@@ -101,6 +110,5 @@
         android:layout_height="wrap_content"
         android:text="LED OFF"
         android:layout_marginTop="8dp" />
-    ```
 
 </LinearLayout>
