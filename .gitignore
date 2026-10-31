@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Credentials
+credentials.h
+
+Rough_work.txt
