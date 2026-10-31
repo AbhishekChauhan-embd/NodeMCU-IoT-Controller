@@ -37,7 +37,8 @@ const int MQTT_PORT     =   8883;
 
 /*----------------------MQTT Topics----------------------*/
 const char* TOPIC_BUILTIN_LED_COMMAND = "abhishek/nodemcu-01/command/builtinLed";
-const char* TOPIC_STATUS = "abhishek/nodemcu-01/status";
+const char* TOPIC_STATUS  = "abhishek/nodemcu-01/status";
+const char* TOPIC_BUILTIN_LED_STATUS  = "abhishek/nodemcu-01/status/builtinLed";
 /*--------------------------end--------------------------*/
 
 #define PUBLISH_INTERVAL_MS = 10000

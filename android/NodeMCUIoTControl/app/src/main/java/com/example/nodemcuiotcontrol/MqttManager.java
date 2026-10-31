@@ -25,8 +25,9 @@ public class MqttManager {
 
     private static final String USERNAME = "esp32_device01";
 
-    private static final String LED_COMMAND_TOPIC =
-            "abhishek/nodemcu-01/command/builtinLed";
+    private static final String LED_COMMAND_TOPIC = "abhishek/nodemcu-01/command/builtinLed";
+    private static final String DEVICE_STATUS_TOPIC = "abhishek/nodemcu-01/status";
+    private static final String LED_STATUS_TOPIC = "abhishek/nodemcu-01/status/builtinLed";
 
     private static final int CONNECTION_TIMEOUT = 15;
     private static final int KEEP_ALIVE_INTERVAL = 30;
@@ -115,9 +116,13 @@ public class MqttManager {
                     }
 
                     Log.d(TAG, "MQTT connection successful");
-                    Log.d(TAG, "Attempting to subscribe to device status...");
 
-                    subscribe("abhishek/nodemcu-01/status");
+                    // Subscribe to NodeMCU device status
+                    subscribe(DEVICE_STATUS_TOPIC);
+                    Log.d(TAG, "Attempting to subscribe to device status...");
+                    // Subscribe to LED status feedback
+                    subscribe(LED_STATUS_TOPIC);
+                    Log.d(TAG, "Attempting to subscribe to LED status...");
 
                     if (listener != null) {
                         listener.onConnected();
@@ -309,6 +314,7 @@ public class MqttManager {
     public void subscribe(String topic) {
 
         Log.d(TAG, "Subscribe method called for: " + topic);
+
         if (mqttClient == null || !mqttClient.isConnected()) {
             Log.e(TAG, "Cannot subscribe: MQTT client is not connected");
             notifyError("Cannot subscribe: MQTT client is disconnected");
@@ -321,15 +327,6 @@ public class MqttManager {
 
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-                    connectionInProgress = false;
-
-                    Log.d(TAG, "MQTT Connected Successfully");
-
-                    subscribe("abhishek/nodemcu-01/status");
-
-                    if (listener != null) {
-                        listener.onConnected();
-                    }
                     Log.d(TAG, "Subscribed successfully: " + topic);
                 }
 
@@ -338,15 +335,15 @@ public class MqttManager {
                         IMqttToken asyncActionToken,
                         Throwable exception) {
 
-                    Log.e(TAG, "Subscription failed", exception);
+                        Log.e(TAG, "Subscription failed for: " + topic, exception);
 
-                    notifyError(getErrorMessage(exception));
+                        notifyError("Subscription failed: " + getErrorMessage(exception));
                 }
             });
 
         } catch (MqttException e) {
 
-            Log.e(TAG, "Subscribe exception", e);
+            Log.e(TAG, "Subscribe exception for: " + topic, e);
 
             notifyError("Subscription error: " + getErrorMessage(e));
         }

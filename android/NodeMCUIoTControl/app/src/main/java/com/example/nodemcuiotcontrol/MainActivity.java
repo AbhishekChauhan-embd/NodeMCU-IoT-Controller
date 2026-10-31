@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
 
         updateBrokerStatus(false);
         updateDeviceStatus(false);
+        txtLedStatus.setText("Current Status: Unknown");
     }
 
     // Initialize UI components
@@ -111,6 +112,8 @@ public class MainActivity extends AppCompatActivity {
 
                             Log.d(TAG, "Received topic: " + topic);
                             Log.d(TAG, "Received message: " + message);
+
+                            // NodeMCU connection status
                             if (topic.equals("abhishek/nodemcu-01/status")) {
 
                                 if (message.equalsIgnoreCase("online")) {
@@ -120,7 +123,16 @@ public class MainActivity extends AppCompatActivity {
                                     updateDeviceStatus(false);
                                 }
                             }
+                            // LED status feedback
+                            else if (topic.equals("abhishek/nodemcu-01/status/builtinLed")) {
 
+                                if (message.equalsIgnoreCase("ON")) {
+                                    updateLedStatus(true);
+                                }
+                                else if (message.equalsIgnoreCase("OFF")) {
+                                    updateLedStatus(false);
+                                }
+                            }
                         });
                     }
 
@@ -221,6 +233,27 @@ public class MainActivity extends AppCompatActivity {
             txtDeviceStatus.setText("● NodeMCU: Offline");
 
             txtDeviceStatus.setTextColor(
+                    getColor(android.R.color.holo_red_dark)
+            );
+        }
+    }
+
+    // Update LED status based on NodeMCU feedback
+    private void updateLedStatus(boolean isOn) {
+
+        if (isOn) {
+
+            txtLedStatus.setText("Current Status: ON");
+
+            txtLedStatus.setTextColor(
+                    getColor(android.R.color.holo_green_dark)
+            );
+
+        } else {
+
+            txtLedStatus.setText("Current Status: OFF");
+
+            txtLedStatus.setTextColor(
                     getColor(android.R.color.holo_red_dark)
             );
         }

@@ -87,6 +87,10 @@ void IOT_AP_1000ms()
     }
 }
 
+/*---------------------------------------------------------------
+API : connectWiFi
+Functoin: This API is responsible to connect NodeMCU to the WiFi
+---------------------------------------------------------------*/
 void connectWiFi()
 {
   Serial.println();
@@ -121,6 +125,10 @@ void connectWiFi()
 
 }
 
+/*----------------------------------------------------------------------
+API : configureMQTT
+Functoin: This API is responsible to configure MQTT broker
+----------------------------------------------------------------------*/
 void configureMQTT()
 {
 
@@ -138,6 +146,10 @@ void configureMQTT()
   connectMQTT();
 }
 
+/*----------------------------------------------------------------------
+API : connectMQTT
+Functoin: This API is responsible to connect NodeMCU to the MQTT broker
+----------------------------------------------------------------------*/
 void connectMQTT()
 {
   while(!mqttClient.connected())
@@ -168,7 +180,7 @@ void connectMQTT()
       Serial.println("Connected to EMQX successfully!");
 
       //Publish device status.
-      mqttClient.publish(TOPIC_STATUS,"online",true);
+      mqttClient.publish(TOPIC_STATUS, "online",true);
 
       //Subscribe to LED command.
       mqttClient.subscribe(TOPIC_BUILTIN_LED_COMMAND,1);
@@ -219,18 +231,56 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
 /*----------------------BUILTIN LED Handler------------------------*/
 void builtinLedHendler(String message)
 {
+  bool validCommand = false;
+  const char* ledStatus = nullptr;
+  
   if(message == "ON")
   {
     digitalWrite(LED_DEVICE_READY, ON);
     Serial.print("LED STATUS : ");
     Serial.println(message);
+
+    ledStatus = "ON";
+    validCommand = true;
   }
   else if(message == "OFF")
   {
     digitalWrite(LED_DEVICE_READY, OFF);
     Serial.print("LED STATUS: ");
     Serial.println(message);
+
+    ledStatus = "OFF";
+    validCommand = true;
   }
+
+  if(validCommand)
+  {
+    Serial.print("LED STATUS : ");
+    Serial.println(ledStatus);
+
+    if(mqttClient.connected())
+    {
+      bool published = mqttClient.publish(
+        TOPIC_BUILTIN_LED_STATUS,
+        ledStatus,
+        true
+      );
+
+      if(published)
+      {
+        Serial.println("LED status feedback published successfully.");
+      }
+      else
+      {
+        Serial.println("LED status feedback publishing failed.");
+      }
+    }
+  }
+  else
+  {
+    Serial.println("Invalid LED command received.");
+  }
+  
 }
 
 
