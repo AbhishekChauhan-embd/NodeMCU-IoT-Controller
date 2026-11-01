@@ -22,8 +22,14 @@ unsigned long previousMillis1000ms = 0;
 
 bool flgDeviceReadyLedStatus = 0;
 
+unsigned long restorationTime = 0;
+unsigned long wifiConnectionTime = 0;
+unsigned long brokerConnectionTime = 0;
+
 void IOT_AP_ini()
 {
+
+  restorationTime = wifiConnectionTime = brokerConnectionTime = millis();
   // Start Serial monitor
   Serial.begin(115200);
   delay(1000);
@@ -54,7 +60,7 @@ void IOT_AP_10ms()
    // MQTT processing
     mqttClient.loop();
     
-  //Serial.println("10ms tick: System is running smoothly!");
+  //Serial.println("10ms tick: mqttClient.loop is running smoothly!");
   
   // if(WiFi.status() != WL_CONNECTED)
   // {
@@ -121,6 +127,10 @@ void connectWiFi()
     Serial.print("Signal Strength : ");
     Serial.print(WiFi.RSSI());
     Serial.println(" dBm");
+
+    Serial.print("WiFi Connection Time in : ");
+    Serial.print((millis() - wifiConnectionTime) / 1000.0);
+    Serial.println(" s");
   }
 
 }
@@ -179,14 +189,31 @@ void connectMQTT()
     {
       Serial.println("Connected to EMQX successfully!");
 
+      Serial.print("Broker connected in : ");
+      Serial.print((millis() - brokerConnectionTime) / 1000.0);
+      Serial.println(" s");
+
       //Publish device status.
       mqttClient.publish(TOPIC_STATUS, "online",true);
 
-      //Subscribe to LED command.
-      mqttClient.subscribe(TOPIC_BUILTIN_LED_COMMAND,1);
+      // Subscribe to LED desired state.
+      bool subscribed = mqttClient.subscribe(TOPIC_BUILTIN_LED_DESIRED_STATUS,1);
 
-      Serial.print("Subscribed to: ");
-      Serial.println(TOPIC_BUILTIN_LED_COMMAND);
+      if(subscribed)
+      {
+        Serial.println("Subscribed to LED desired state successfully.");
+
+        Serial.print("Subscribed to: ");
+        Serial.println(TOPIC_BUILTIN_LED_DESIRED_STATUS);
+
+        Serial.print("NodeMCU state restored in : ");
+        Serial.print((millis() - restorationTime) / 1000.0);
+        Serial.println(" s");
+      }
+      else
+      {
+          Serial.println("LED desired state subscription failed.");
+      }
     }
     else{
       Serial.print("MQTT connection failed. State = ");
@@ -203,12 +230,12 @@ void connectMQTT()
 void mqttCallback(char* topic, byte* payload, unsigned int length)
 {
   Serial.println();
-  Serial.print("MQTT Message received");
-  Serial.println();
-
-  Serial.print("Topic : ");
+  Serial.println("========== MQTT CALLBACK TRIGGERED ==========");
+  Serial.print("Received Topic: ");
   Serial.println(topic);
-  Serial.print("Message : ");
+
+  Serial.print("Payload Length: ");
+  Serial.println(length);
 
   String message = "";
 
@@ -222,7 +249,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
   message.trim();
   message.toUpperCase();
 
-  if(String(topic) == TOPIC_BUILTIN_LED_COMMAND)
+  if(String(topic) == TOPIC_BUILTIN_LED_DESIRED_STATUS)
   {
     builtinLedHendler(message);
   }

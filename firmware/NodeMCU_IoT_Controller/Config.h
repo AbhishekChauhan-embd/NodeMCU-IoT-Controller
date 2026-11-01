@@ -36,11 +36,9 @@ const int MQTT_PORT     =   8883;
 /*--------------------------end--------------------------*/
 
 /*----------------------MQTT Topics----------------------*/
-const char* TOPIC_BUILTIN_LED_COMMAND = "abhishek/nodemcu-01/command/builtinLed";
-const char* TOPIC_STATUS  = "abhishek/nodemcu-01/status";
-const char* TOPIC_BUILTIN_LED_STATUS  = "abhishek/nodemcu-01/status/builtinLed";
-
-#define TOPIC_BUILTIN_LED_DESIRED_STATUS = "abhishek/nodemcu-01/desired_state/builtinLed";
+const char* TOPIC_BUILTIN_LED_DESIRED_STATUS  = "abhishek/nodemcu-01/desired/builtinLed";
+const char* TOPIC_STATUS                      = "abhishek/nodemcu-01/status";
+const char* TOPIC_BUILTIN_LED_STATUS          = "abhishek/nodemcu-01/status/builtinLed";
 
 /*--------------------------end--------------------------*/
 

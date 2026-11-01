@@ -25,8 +25,10 @@ public class MqttManager {
 
     private static final String USERNAME = "esp32_device01";
 
-    private static final String LED_COMMAND_TOPIC = "abhishek/nodemcu-01/command/builtinLed";
+    private static final String LED_DESIRED_STATE_TOPIC = "abhishek/nodemcu-01/desired/builtinLed";
+
     private static final String DEVICE_STATUS_TOPIC = "abhishek/nodemcu-01/status";
+
     private static final String LED_STATUS_TOPIC = "abhishek/nodemcu-01/status/builtinLed";
 
     private static final int CONNECTION_TIMEOUT = 15;
@@ -123,6 +125,9 @@ public class MqttManager {
                     // Subscribe to LED status feedback
                     subscribe(LED_STATUS_TOPIC);
                     Log.d(TAG, "Attempting to subscribe to LED status...");
+                    // Subscribe to LED desired state
+                    subscribe(LED_DESIRED_STATE_TOPIC);
+                    Log.d(TAG, "Attempting to subscribe to LED desired state...");
 
                     if (listener != null) {
                         listener.onConnected();
@@ -260,7 +265,8 @@ public class MqttManager {
             return;
         }
 
-        publishMessage(LED_COMMAND_TOPIC, command);
+      //  publishMessage(LED_DESIRED_STATE_TOPIC, command);
+        publishRetainedMessage(LED_DESIRED_STATE_TOPIC, command);
     }
 
     // Generic MQTT publish method
@@ -309,6 +315,56 @@ public class MqttManager {
             notifyError(getErrorMessage(e));
         }
     }
+
+    // Publish retained MQTT message
+    public void publishRetainedMessage(String topic, String payload) {
+
+        if (mqttClient == null || !mqttClient.isConnected()) {
+            notifyError("MQTT client is not connected");
+            return;
+        }
+
+        try {
+
+            MqttMessage message = new MqttMessage(
+                    payload.getBytes(StandardCharsets.UTF_8)
+            );
+
+            message.setQos(QOS);
+            message.setRetained(true);
+
+            mqttClient.publish(topic, message, null, new IMqttActionListener() {
+
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+
+                    Log.d(TAG, "Retained message published successfully: "
+                            + topic + " -> " + payload);
+
+                    if (listener != null) {
+                        listener.onPublishComplete(topic);
+                    }
+                }
+
+                @Override
+                public void onFailure(
+                        IMqttToken asyncActionToken,
+                        Throwable exception) {
+
+                    Log.e(TAG, "Retained publish failed", exception);
+
+                    notifyError(getErrorMessage(exception));
+                }
+            });
+
+        } catch (MqttException e) {
+
+            Log.e(TAG, "Retained publish exception", e);
+
+            notifyError(getErrorMessage(e));
+        }
+    }
+
 
     // Subscribe to MQTT topic
     public void subscribe(String topic) {
