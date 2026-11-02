@@ -6,7 +6,7 @@ import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -16,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 public class MqttManager {
-
     private static final String TAG = "MqttManager";
 
     // EMQX Cloud configuration
@@ -25,11 +24,14 @@ public class MqttManager {
 
     private static final String USERNAME = "esp32_device01";
 
-    private static final String LED_DESIRED_STATE_TOPIC = "abhishek/nodemcu-01/desired/builtinLed";
+    private static final String LED_DESIRED_STATE_TOPIC =
+            "abhishek/nodemcu-01/desired/builtinLed";
 
-    private static final String DEVICE_STATUS_TOPIC = "abhishek/nodemcu-01/status";
+    private static final String DEVICE_STATUS_TOPIC =
+            "abhishek/nodemcu-01/status";
 
-    private static final String LED_STATUS_TOPIC = "abhishek/nodemcu-01/status/builtinLed";
+    private static final String LED_STATUS_TOPIC =
+            "abhishek/nodemcu-01/status/builtinLed";
 
     private static final int CONNECTION_TIMEOUT = 15;
     private static final int KEEP_ALIVE_INTERVAL = 30;
@@ -37,12 +39,18 @@ public class MqttManager {
 
     private MqttAsyncClient mqttClient;
 
-    private boolean connectionInProgress = false;
-    private boolean disconnectInProgress = false;
+    private volatile boolean connected = false;
+    private volatile boolean connectionInProgress = false;
+    private volatile boolean disconnectInProgress = false;
+    private volatile boolean manuallyDisconnected = false;
+    private volatile boolean deviceOnline = false;
+    private volatile boolean ledStatusKnown = false;
+    private volatile boolean ledOn = false;
 
-    private final ConnectionListener listener;
+    // Activity listener
+    private volatile ConnectionListener listener;
 
-    // Listener interface for communicating with MainActivity
+    // Listener interface
     public interface ConnectionListener {
 
         void onConnected();
@@ -57,8 +65,20 @@ public class MqttManager {
     }
 
     // Constructor
-    public MqttManager(ConnectionListener listener) {
+    public MqttManager() {
+    }
+
+    // Register listener
+    public synchronized void setConnectionListener(ConnectionListener listener) {
         this.listener = listener;
+
+        Log.d(TAG, "Connection listener registered: " +
+                (listener != null ? listener.getClass().getName() : "NULL"));
+    }
+
+    // Remove listener
+    public synchronized void removeConnectionListener() {
+        this.listener = null;
     }
 
     // Establish MQTT connection
@@ -79,6 +99,7 @@ public class MqttManager {
             return;
         }
 
+        manuallyDisconnected = false;
         connectionInProgress = true;
 
         try {
@@ -118,20 +139,6 @@ public class MqttManager {
                     }
 
                     Log.d(TAG, "MQTT connection successful");
-
-                    // Subscribe to NodeMCU device status
-                    subscribe(DEVICE_STATUS_TOPIC);
-                    Log.d(TAG, "Attempting to subscribe to device status...");
-                    // Subscribe to LED status feedback
-                    subscribe(LED_STATUS_TOPIC);
-                    Log.d(TAG, "Attempting to subscribe to LED status...");
-                    // Subscribe to LED desired state
-                    subscribe(LED_DESIRED_STATE_TOPIC);
-                    Log.d(TAG, "Attempting to subscribe to LED desired state...");
-
-                    if (listener != null) {
-                        listener.onConnected();
-                    }
                 }
 
                 @Override
@@ -141,6 +148,7 @@ public class MqttManager {
 
                     synchronized (MqttManager.this) {
                         connectionInProgress = false;
+                        connected = false;
                     }
 
                     Log.e(TAG, "MQTT connection failed", exception);
@@ -152,6 +160,7 @@ public class MqttManager {
         } catch (MqttException e) {
 
             connectionInProgress = false;
+            connected = false;
 
             Log.e(TAG, "MQTT connection exception", e);
 
@@ -159,19 +168,63 @@ public class MqttManager {
         }
     }
 
+    public boolean isLedStatusKnown() {
+        return ledStatusKnown;
+    }
+
+    public boolean isLedOn() {
+        return ledOn;
+    }
+    public boolean isDeviceOnline() {
+        return deviceOnline;
+    }
     // Configure MQTT callbacks
     private void setMqttCallback() {
 
-        mqttClient.setCallback(new MqttCallback() {
+        mqttClient.setCallback(new MqttCallbackExtended() {
+
+            @Override
+            public void connectComplete(
+                    boolean reconnect,
+                    String serverURI) {
+
+                Log.d(TAG, reconnect
+                        ? "MQTT reconnected successfully"
+                        : "MQTT initial connection completed");
+
+                synchronized (MqttManager.this) {
+
+                    connectionInProgress = false;
+
+                    // Ignore connection if user manually disconnected.
+                    if (manuallyDisconnected) {
+
+                        Log.d(TAG,
+                                "Manual disconnect requested. Closing connection.");
+
+                        disconnect();
+                        return;
+                    }
+
+                    connected = true;
+                }
+
+                // Restore subscriptions
+                subscribe(DEVICE_STATUS_TOPIC);
+                subscribe(LED_STATUS_TOPIC);
+                subscribe(LED_DESIRED_STATE_TOPIC);
+
+                notifyConnected();
+            }
 
             @Override
             public void connectionLost(Throwable cause) {
 
                 Log.e(TAG, "MQTT connection lost", cause);
 
-                if (listener != null) {
-                    listener.onDisconnected();
-                }
+                connected = false;
+
+                notifyDisconnected();
             }
 
             @Override
@@ -180,15 +233,33 @@ public class MqttManager {
                     MqttMessage message) {
 
                 String receivedMessage =
-                        new String(message.getPayload(), StandardCharsets.UTF_8);
-
+                        new String(
+                                message.getPayload(),
+                                StandardCharsets.UTF_8
+                        );
                 Log.d(TAG, "MESSAGE RECEIVED!");
                 Log.d(TAG, "Topic: " + topic);
                 Log.d(TAG, "Payload: " + receivedMessage);
 
-                if (listener != null) {
-                    listener.onMessageReceived(topic, receivedMessage);
+                if (topic.equals(DEVICE_STATUS_TOPIC)) {
+
+                    if (receivedMessage.equalsIgnoreCase("online")) {
+                        deviceOnline = true;
+                    } else if (receivedMessage.equalsIgnoreCase("offline")) {
+                        deviceOnline = false;
+                    }
                 }
+
+                if (topic.equals(LED_STATUS_TOPIC)) {
+                    if (receivedMessage.equalsIgnoreCase("ON")) {
+                        ledOn = true;
+                        ledStatusKnown = true;
+                    } else if (receivedMessage.equalsIgnoreCase("OFF")) {
+                        ledOn = false;
+                        ledStatusKnown = true;
+                    }
+                }
+                notifyMessageReceived(topic, receivedMessage);
             }
 
             @Override
@@ -202,13 +273,30 @@ public class MqttManager {
     // Disconnect MQTT connection
     public synchronized void disconnect() {
 
-        if (mqttClient == null || !mqttClient.isConnected()) {
-            Log.d(TAG, "MQTT client is already disconnected");
-            return;
-        }
+        // Record manual disconnect even if connection is still pending.
+        manuallyDisconnected = true;
 
         if (disconnectInProgress) {
             Log.d(TAG, "Disconnection already in progress");
+            return;
+        }
+
+        if (mqttClient == null) {
+
+            connected = false;
+            Log.d(TAG, "MQTT client is not initialized");
+
+            return;
+        }
+
+        // If connection is still in progress, connectComplete()
+        // will handle the pending manual disconnect.
+        if (!mqttClient.isConnected()) {
+
+            connected = false;
+
+            Log.d(TAG, "MQTT client is already disconnected");
+
             return;
         }
 
@@ -222,14 +310,14 @@ public class MqttManager {
                 public void onSuccess(IMqttToken asyncActionToken) {
 
                     synchronized (MqttManager.this) {
+
                         disconnectInProgress = false;
+                        connected = false;
                     }
 
                     Log.d(TAG, "MQTT disconnected successfully");
 
-                    if (listener != null) {
-                        listener.onDisconnected();
-                    }
+                    notifyDisconnected();
                 }
 
                 @Override
@@ -238,7 +326,9 @@ public class MqttManager {
                         Throwable exception) {
 
                     synchronized (MqttManager.this) {
+
                         disconnectInProgress = false;
+                        connected = false;
                     }
 
                     Log.e(TAG, "MQTT disconnection failed", exception);
@@ -250,6 +340,7 @@ public class MqttManager {
         } catch (MqttException e) {
 
             disconnectInProgress = false;
+            connected = false;
 
             Log.e(TAG, "Disconnect exception", e);
 
@@ -261,19 +352,22 @@ public class MqttManager {
     public void publishLedCommand(String command) {
 
         if (!"ON".equals(command) && !"OFF".equals(command)) {
+
             notifyError("Invalid LED command");
+
             return;
         }
 
-      //  publishMessage(LED_DESIRED_STATE_TOPIC, command);
         publishRetainedMessage(LED_DESIRED_STATE_TOPIC, command);
     }
 
     // Generic MQTT publish method
     public void publishMessage(String topic, String payload) {
 
-        if (mqttClient == null || !mqttClient.isConnected()) {
+        if (!isConnected()) {
+
             notifyError("MQTT client is not connected");
+
             return;
         }
 
@@ -290,11 +384,9 @@ public class MqttManager {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
 
-                    Log.d(TAG, "Published successfully: " + payload);
+                    Log.d(TAG, "Published successfully: " + topic);
 
-                    if (listener != null) {
-                        listener.onPublishComplete(topic);
-                    }
+                    notifyPublishComplete(topic);
                 }
 
                 @Override
@@ -319,8 +411,10 @@ public class MqttManager {
     // Publish retained MQTT message
     public void publishRetainedMessage(String topic, String payload) {
 
-        if (mqttClient == null || !mqttClient.isConnected()) {
+        if (!isConnected()) {
+
             notifyError("MQTT client is not connected");
+
             return;
         }
 
@@ -338,12 +432,10 @@ public class MqttManager {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
 
-                    Log.d(TAG, "Retained message published successfully: "
-                            + topic + " -> " + payload);
+                    Log.d(TAG,
+                            "Retained message published successfully: " + topic);
 
-                    if (listener != null) {
-                        listener.onPublishComplete(topic);
-                    }
+                    notifyPublishComplete(topic);
                 }
 
                 @Override
@@ -365,15 +457,17 @@ public class MqttManager {
         }
     }
 
-
     // Subscribe to MQTT topic
     public void subscribe(String topic) {
 
         Log.d(TAG, "Subscribe method called for: " + topic);
 
-        if (mqttClient == null || !mqttClient.isConnected()) {
+        if (!isConnected()) {
+
             Log.e(TAG, "Cannot subscribe: MQTT client is not connected");
+
             notifyError("Cannot subscribe: MQTT client is disconnected");
+
             return;
         }
 
@@ -383,6 +477,7 @@ public class MqttManager {
 
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
+
                     Log.d(TAG, "Subscribed successfully: " + topic);
                 }
 
@@ -391,9 +486,14 @@ public class MqttManager {
                         IMqttToken asyncActionToken,
                         Throwable exception) {
 
-                        Log.e(TAG, "Subscription failed for: " + topic, exception);
+                    Log.e(TAG,
+                            "Subscription failed for: " + topic,
+                            exception);
 
-                        notifyError("Subscription failed: " + getErrorMessage(exception));
+                    notifyError(
+                            "Subscription failed: " +
+                                    getErrorMessage(exception)
+                    );
                 }
             });
 
@@ -401,14 +501,24 @@ public class MqttManager {
 
             Log.e(TAG, "Subscribe exception for: " + topic, e);
 
-            notifyError("Subscription error: " + getErrorMessage(e));
+            notifyError(
+                    "Subscription error: " + getErrorMessage(e)
+            );
         }
     }
 
     // Check MQTT connection state
     public boolean isConnected() {
 
-        return mqttClient != null && mqttClient.isConnected();
+        return connected &&
+                mqttClient != null &&
+                mqttClient.isConnected();
+    }
+
+    // Check manual disconnect state
+    public boolean isManuallyDisconnected() {
+
+        return manuallyDisconnected;
     }
 
     // Return readable error message
@@ -420,15 +530,58 @@ public class MqttManager {
 
         String message = exception.getMessage();
 
-        return message != null ? message : exception.toString();
+        return message != null
+                ? message
+                : exception.toString();
     }
 
-    // Notify error through listener
-    private void notifyError(String message) {
+    // Listener notification methods
+    private void notifyConnected() {
 
-        if (listener != null) {
-            listener.onError(message);
+        ConnectionListener currentListener = listener;
+
+        if (currentListener != null) {
+            currentListener.onConnected();
         }
     }
 
+    private void notifyDisconnected() {
+
+        ConnectionListener currentListener = listener;
+
+        if (currentListener != null) {
+            currentListener.onDisconnected();
+        }
+    }
+
+    private void notifyError(String message) {
+
+        ConnectionListener currentListener = listener;
+
+        if (currentListener != null) {
+            currentListener.onError(message);
+        }
+    }
+
+    private void notifyMessageReceived(String topic, String message) {
+
+        ConnectionListener currentListener = listener;
+
+        Log.d(TAG, "Forwarding message to listener");
+        Log.d(TAG, "Active listener: " +
+                (currentListener != null ? "AVAILABLE" : "NULL"));
+
+        if (currentListener != null) {
+            currentListener.onMessageReceived(topic, message);
+        }
+    }
+
+    private void notifyPublishComplete(String topic) {
+
+        ConnectionListener currentListener = listener;
+
+        if (currentListener != null) {
+            currentListener.onPublishComplete(topic);
+        }
+    }
 }

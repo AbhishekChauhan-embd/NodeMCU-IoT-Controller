@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F6F8FB"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Header -->
+        <TextView
+            android:id="@+id/btnBack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="‹  Back"
+            android:textSize="16sp"
+            android:textColor="#3978E5"
+            android:padding="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Broker Connection"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:textColor="#172B4D"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Configure your MQTT broker connection"
+            android:textSize="14sp"
+            android:textColor="#7A869A"
+            android:layout_marginTop="6dp" />
+
+        <!-- Connection Status Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:padding="18dp"
+            android:layout_marginTop="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CONNECTION STATUS"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#7A869A" />
+
+            <TextView
+                android:id="@+id/txtBrokerConnectionStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● Disconnected"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:textColor="#DE4C4A"
+                android:layout_marginTop="12dp" />
+
+        </LinearLayout>
+
+        <!-- Broker Configuration Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:padding="18dp"
+            android:layout_marginTop="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BROKER CONFIGURATION"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#7A869A"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Broker Host"
+                android:textColor="#172B4D"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtBrokerHost"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="EMQX Broker"
+                android:textColor="#526581"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="18dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Username"
+                android:textColor="#172B4D"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtBrokerUsername"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="MQTT Username"
+                android:textColor="#526581"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="18dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Password"
+                android:textColor="#172B4D"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/edtMqttPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter MQTT password"
+                android:inputType="textPassword"
+                android:singleLine="true"
+                android:layout_marginTop="6dp" />
+
+            <!-- Show Password -->
+            <Switch
+                android:id="@+id/switchShowPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Show Password"
+                android:layout_marginTop="12dp" />
+
+            <!-- Remember Password -->
+            <Switch
+                android:id="@+id/switchRememberPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Remember Password"
+                android:layout_marginTop="8dp" />
+
+        </LinearLayout>
+
+        <!-- Action Buttons -->
+        <Button
+            android:id="@+id/btnBrokerConnect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CONNECT"
+            android:layout_marginTop="24dp" />
+
+        <Button
+            android:id="@+id/btnBrokerDisconnect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="DISCONNECT"
+            android:layout_marginTop="10dp" />
+
+    </LinearLayout>
+
+</ScrollView>

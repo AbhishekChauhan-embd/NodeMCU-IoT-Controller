@@ -3,9 +3,9 @@ package com.example.nodemcuiotcontrol;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.content.Intent;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -17,12 +17,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView txtDeviceStatus;
     private TextView txtLedStatus;
 
-    private EditText edtMqttPassword;
-
-    private Button btnConnect;
-    private Button btnDisconnect;
     private Button btnLedOn;
     private Button btnLedOff;
+    private Button btnBrokerSettings;
 
     // MQTT manager
     private MqttManager mqttManager;
@@ -32,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+        btnBrokerSettings = findViewById(R.id.btnBrokerSettings);
 
         initializeViews();
 
@@ -39,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
         setupButtonListeners();
 
-        updateBrokerStatus(false);
+        updateBrokerStatus(mqttManager.isConnected());
         updateDeviceStatus(false);
         txtLedStatus.setText("Current Status: Unknown");
     }
@@ -51,11 +49,6 @@ public class MainActivity extends AppCompatActivity {
         txtDeviceStatus = findViewById(R.id.txtDeviceStatus);
         txtLedStatus = findViewById(R.id.txtLedStatus);
 
-        edtMqttPassword = findViewById(R.id.edtMqttPassword);
-
-        btnConnect = findViewById(R.id.btnConnect);
-        btnDisconnect = findViewById(R.id.btnDisconnect);
-
         btnLedOn = findViewById(R.id.btnLedOn);
         btnLedOff = findViewById(R.id.btnLedOff);
     }
@@ -63,73 +56,64 @@ public class MainActivity extends AppCompatActivity {
     // Initialize MQTT manager
     private void initializeMqttManager() {
 
-        mqttManager = new MqttManager(
+        NodeMCUIoTApplication app =
+                (NodeMCUIoTApplication) getApplication();
+
+        mqttManager = app.getMqttManager();
+
+        mqttManager.setConnectionListener(
                 new MqttManager.ConnectionListener() {
 
                     @Override
                     public void onConnected() {
-
                         runOnUiThread(() -> {
-
                             Log.d(TAG, "MQTT Connected");
-
                             updateBrokerStatus(true);
-
-                            //showToast("Connected to EMQX");
                         });
                     }
 
                     @Override
                     public void onDisconnected() {
-
                         runOnUiThread(() -> {
-
                             Log.d(TAG, "MQTT Disconnected");
-
                             updateBrokerStatus(false);
-
                             showToast("MQTT Disconnected");
                         });
                     }
 
                     @Override
                     public void onError(String message) {
-
                         runOnUiThread(() -> {
-
                             Log.e(TAG, "MQTT Error: " + message);
-
                             showToast("MQTT Error: " + message);
-
                             updateBrokerStatus(mqttManager.isConnected());
                         });
                     }
 
                     @Override
                     public void onMessageReceived(String topic, String message) {
-
                         runOnUiThread(() -> {
 
-                            Log.d(TAG, "Received topic: " + topic);
-                            Log.d(TAG, "Received message: " + message);
+                            Log.d(TAG, "MainActivity received message");
+                            Log.d(TAG, "Topic: " + topic);
+                            Log.d(TAG, "Message: " + message);
 
-                            // NodeMCU connection status
                             if (topic.equals("abhishek/nodemcu-01/status")) {
 
                                 if (message.equalsIgnoreCase("online")) {
                                     updateDeviceStatus(true);
-                                }
-                                else if (message.equalsIgnoreCase("offline")) {
+                                    Log.d(TAG, "NodeMCU UI updated: ONLINE");
+                                } else if (message.equalsIgnoreCase("offline")) {
                                     updateDeviceStatus(false);
+                                    Log.d(TAG, "NodeMCU UI updated: OFFLINE");
                                 }
-                            }
-                            // LED status feedback
-                            else if (topic.equals("abhishek/nodemcu-01/status/builtinLed")) {
+
+                            } else if (topic.equals(
+                                    "abhishek/nodemcu-01/status/builtinLed")) {
 
                                 if (message.equalsIgnoreCase("ON")) {
                                     updateLedStatus(true);
-                                }
-                                else if (message.equalsIgnoreCase("OFF")) {
+                                } else if (message.equalsIgnoreCase("OFF")) {
                                     updateLedStatus(false);
                                 }
                             }
@@ -138,42 +122,14 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onPublishComplete(String topic) {
-
-                        runOnUiThread(() -> {
-
-                            Log.d(TAG, "Publish completed: " + topic);
-
-                        });
+                        runOnUiThread(() ->
+                                Log.d(TAG, "Publish completed: " + topic));
                     }
                 }
         );
     }
-
     // Configure button click listeners
     private void setupButtonListeners() {
-
-        btnConnect.setOnClickListener(view -> {
-
-            String password =
-                    edtMqttPassword.getText().toString();
-
-            if (password.isEmpty()) {
-
-                edtMqttPassword.setError("Enter MQTT password");
-                return;
-            }
-
-            txtBrokerStatus.setText("Connecting...");
-            btnConnect.setEnabled(false);
-
-            mqttManager.connect(password);
-        });
-
-        btnDisconnect.setOnClickListener(view -> {
-
-            mqttManager.disconnect();
-
-        });
 
         btnLedOn.setOnClickListener(view -> {
 
@@ -185,6 +141,15 @@ public class MainActivity extends AppCompatActivity {
 
             mqttManager.publishLedCommand("OFF");
 
+        });
+
+        btnBrokerSettings.setOnClickListener(v -> {
+            Intent intent = new Intent(
+                    MainActivity.this,
+                    BrokerConnectionActivity.class
+            );
+
+            startActivity(intent);
         });
     }
 
@@ -208,9 +173,6 @@ public class MainActivity extends AppCompatActivity {
                     getColor(android.R.color.holo_red_dark)
             );
         }
-
-        btnConnect.setEnabled(!connected);
-        btnDisconnect.setEnabled(connected);
 
         btnLedOn.setEnabled(connected);
         btnLedOff.setEnabled(connected);
@@ -270,10 +232,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (mqttManager != null) {
+
+            initializeMqttManager();
+
+            // Refresh broker connection status
+            updateBrokerStatus(mqttManager.isConnected());
+
+            // Refresh latest NodeMCU status
+            updateDeviceStatus(mqttManager.isDeviceOnline());
+
+            if (mqttManager.isLedStatusKnown()) {
+                updateLedStatus(mqttManager.isLedOn());
+            }
+        }
+    }
+    @Override
     protected void onDestroy() {
 
         if (mqttManager != null) {
-            mqttManager.disconnect();
+            mqttManager.removeConnectionListener();
         }
 
         super.onDestroy();

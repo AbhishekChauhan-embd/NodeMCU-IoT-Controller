@@ -15,7 +15,14 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="#172B4D"
-        android:layout_marginBottom="32dp" />
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnBrokerSettings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="BROKER SETTINGS"
+        android:layout_marginBottom="20dp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -34,7 +41,6 @@
         android:textColor="#D32F2F"
         android:layout_marginTop="16dp" />
 
-
     <TextView
         android:id="@+id/txtDeviceStatus"
         android:layout_width="wrap_content"
@@ -43,28 +49,6 @@
         android:textSize="16sp"
         android:textColor="#757575"
         android:layout_margin="12dp" />
-
-    <EditText
-        android:id="@+id/edtMqttPassword"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Enter MQTT Password"
-        android:inputType="textPassword"
-        android:padding="12dp"
-        android:layout_marginBottom="12dp" />
-
-    <Button
-        android:id="@+id/btnConnect"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="CONNECT" />
-
-    <Button
-        android:id="@+id/btnDisconnect"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="DISCONNECT"
-        android:layout_marginTop="8dp" />
 
     <View
         android:layout_width="match_parent"
@@ -110,5 +94,4 @@
         android:layout_height="wrap_content"
         android:text="LED OFF"
         android:layout_marginTop="8dp" />
-
 </LinearLayout>
