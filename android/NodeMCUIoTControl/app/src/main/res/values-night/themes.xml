@@ -1,7 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.NodeMCU_IoT_Control" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+
+    <style name="Base.Theme.NodeMCU_IoT_Control"
+        parent="Theme.Material3.DayNight.NoActionBar">
+
+        <!-- Primary Colours -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+
+        <!-- Secondary Colours -->
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorOnSecondary">@color/on_secondary</item>
+
+        <!-- Background and Surface -->
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+
+        <!-- Status Bar -->
+        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:windowLightStatusBar">false</item>
+
+        <!-- Navigation Bar -->
+        <item name="android:navigationBarColor">@color/primary</item>
+        <item name="android:windowLightNavigationBar">false</item>
+
     </style>
+
+    <style name="Theme.NodeMCU_IoT_Control"
+        parent="Base.Theme.NodeMCU_IoT_Control" />
+
 </resources>

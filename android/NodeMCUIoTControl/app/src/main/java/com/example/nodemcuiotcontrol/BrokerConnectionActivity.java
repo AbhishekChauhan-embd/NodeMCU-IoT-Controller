@@ -148,11 +148,11 @@ public class BrokerConnectionActivity extends AppCompatActivity {
     private void updateBrokerStatus() {
 
         if (mqttManager.isConnected()) {
-            txtBrokerConnectionStatus.setText("Connected");
+            txtBrokerConnectionStatus.setText("● CONNECTED");
             txtBrokerConnectionStatus.setTextColor(
                     getColor(android.R.color.holo_green_dark));
         } else {
-            txtBrokerConnectionStatus.setText("Disconnected");
+            txtBrokerConnectionStatus.setText("● DISCONNECTED");
             txtBrokerConnectionStatus.setTextColor(
                     getColor(android.R.color.holo_red_dark));
         }

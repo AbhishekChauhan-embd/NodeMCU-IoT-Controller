@@ -8,6 +8,7 @@ import android.widget.Toast;
 import android.content.Intent;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -17,8 +18,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView txtDeviceStatus;
     private TextView txtLedStatus;
 
-    private Button btnLedOn;
-    private Button btnLedOff;
+    private SwitchCompat switchLed;
+    private boolean isUpdatingLedSwitch = false;
     private Button btnBrokerSettings;
 
     // MQTT manager
@@ -49,8 +50,7 @@ public class MainActivity extends AppCompatActivity {
         txtDeviceStatus = findViewById(R.id.txtDeviceStatus);
         txtLedStatus = findViewById(R.id.txtLedStatus);
 
-        btnLedOn = findViewById(R.id.btnLedOn);
-        btnLedOff = findViewById(R.id.btnLedOff);
+        switchLed = findViewById(R.id.switchLed);
     }
 
     // Initialize MQTT manager
@@ -131,19 +131,23 @@ public class MainActivity extends AppCompatActivity {
     // Configure button click listeners
     private void setupButtonListeners() {
 
-        btnLedOn.setOnClickListener(view -> {
+        switchLed.setOnCheckedChangeListener((buttonView, isChecked) -> {
 
-            mqttManager.publishLedCommand("ON");
+            if (isUpdatingLedSwitch) {
+                return;
+            }
 
-        });
+            if (mqttManager != null && mqttManager.isConnected()) {
 
-        btnLedOff.setOnClickListener(view -> {
+                mqttManager.publishLedCommand(
+                        isChecked ? "ON" : "OFF"
+                );
 
-            mqttManager.publishLedCommand("OFF");
-
+            }
         });
 
         btnBrokerSettings.setOnClickListener(v -> {
+
             Intent intent = new Intent(
                     MainActivity.this,
                     BrokerConnectionActivity.class
@@ -159,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (connected) {
 
-            txtBrokerStatus.setText("● MQTT Broker: Connected");
+            txtBrokerStatus.setText("● CONNECTED");
 
             txtBrokerStatus.setTextColor(
                     getColor(android.R.color.holo_green_dark)
@@ -167,15 +171,13 @@ public class MainActivity extends AppCompatActivity {
 
         } else {
 
-            txtBrokerStatus.setText("● MQTT Broker: Disconnected");
+            txtBrokerStatus.setText("● DISCONNECTED");
 
             txtBrokerStatus.setTextColor(
                     getColor(android.R.color.holo_red_dark)
             );
         }
-
-        btnLedOn.setEnabled(connected);
-        btnLedOff.setEnabled(connected);
+        switchLed.setEnabled(connected);
     }
 
 
@@ -184,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (online) {
 
-            txtDeviceStatus.setText("● NodeMCU: Online");
+            txtDeviceStatus.setText("● ONLINE");
 
             txtDeviceStatus.setTextColor(
                     getColor(android.R.color.holo_green_dark)
@@ -192,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
 
         } else {
 
-            txtDeviceStatus.setText("● NodeMCU: Offline");
+            txtDeviceStatus.setText("● OFFLINE");
 
             txtDeviceStatus.setTextColor(
                     getColor(android.R.color.holo_red_dark)
@@ -203,9 +205,15 @@ public class MainActivity extends AppCompatActivity {
     // Update LED status based on NodeMCU feedback
     private void updateLedStatus(boolean isOn) {
 
+        isUpdatingLedSwitch = true;
+
+        switchLed.setChecked(isOn);
+
+        isUpdatingLedSwitch = false;
+
         if (isOn) {
 
-            txtLedStatus.setText("Current Status: ON");
+            txtLedStatus.setText("Status: ON");
 
             txtLedStatus.setTextColor(
                     getColor(android.R.color.holo_green_dark)
@@ -213,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
 
         } else {
 
-            txtLedStatus.setText("Current Status: OFF");
+            txtLedStatus.setText("Status: OFF");
 
             txtLedStatus.setTextColor(
                     getColor(android.R.color.holo_red_dark)
