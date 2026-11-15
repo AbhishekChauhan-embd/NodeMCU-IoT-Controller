@@ -29,10 +29,10 @@
             android:textColor="#7B8798"
             android:textSize="14sp"
             android:layout_marginTop="4dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="28dp"
             android:gravity="center" />
 
-        <!-- Connection Status Heading -->
+        <!-- CONNECTION STATUS SECTION -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -51,6 +51,7 @@
 
             <!-- MQTT Broker Card -->
             <LinearLayout
+                android:id="@+id/cardMqttBroker"
                 android:layout_width="0dp"
                 android:layout_height="135dp"
                 android:layout_weight="1"
@@ -58,7 +59,10 @@
                 android:orientation="vertical"
                 android:gravity="center_vertical"
                 android:padding="16dp"
-                android:background="@drawable/bg_status_card">
+                android:background="@drawable/bg_status_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
                 <ImageView
                     android:layout_width="36dp"
@@ -127,14 +131,20 @@
 
         </LinearLayout>
 
-        <!-- Broker Settings -->
-        <Button
-            android:id="@+id/btnBrokerSettings"
-            android:layout_width="match_parent"
+        <!-- DEVICE CONTROLS SECTION -->
+
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="BROKER SETTINGS"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="28dp" />
+            android:text="DEVICE CONTROLS"
+            android:textColor="#53627A"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Built-in LED Control Card -->
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -142,7 +152,7 @@
             android:orientation="vertical"
             android:padding="20dp"
             android:background="@drawable/bg_status_card">
-            <!-- Device Name and Toggle -->
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -190,6 +200,9 @@
                     android:contentDescription="Built-in LED power control" />
 
             </LinearLayout>
+
         </LinearLayout>
+
     </LinearLayout>
+
 </ScrollView>

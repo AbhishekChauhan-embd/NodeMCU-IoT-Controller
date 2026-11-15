@@ -3,6 +3,7 @@ package com.example.nodemcuiotcontrol;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.content.Intent;
@@ -30,7 +31,21 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
-        btnBrokerSettings = findViewById(R.id.btnBrokerSettings);
+        //btnBrokerSettings = findViewById(R.id.btnBrokerSettings);
+
+        LinearLayout cardMqttBroker =
+                findViewById(R.id.cardMqttBroker);
+
+        cardMqttBroker.setOnClickListener(v -> {
+            Intent intent = new Intent(
+                    MainActivity.this,
+                    BrokerConnectionActivity.class
+            );
+            startActivity(intent);
+        });
+
+        cardMqttBroker.setClickable(true);
+        cardMqttBroker.setFocusable(true);
 
         initializeViews();
 
@@ -41,6 +56,9 @@ public class MainActivity extends AppCompatActivity {
         updateBrokerStatus(mqttManager.isConnected());
         updateDeviceStatus(false);
         txtLedStatus.setText("Current Status: Unknown");
+
+        // Automatically connect using saved MQTT credentials
+        autoConnectWithSavedPassword();
     }
 
     // Initialize UI components
@@ -128,6 +146,42 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
     }
+
+    // Automatically connect using saved password
+    private void autoConnectWithSavedPassword() {
+
+        // Do not connect if already connected
+        if (mqttManager.isConnected()) {
+            Log.d(TAG, "MQTT already connected. Skipping auto-connect.");
+            return;
+        }
+
+        // Respect user's manual disconnect
+        if (mqttManager.isManuallyDisconnected()) {
+            Log.d(TAG, "Manual disconnect detected. Skipping auto-connect.");
+            return;
+        }
+
+        // Check whether a password is saved
+        if (!MqttCredentialStorage.hasSavedPassword(this)) {
+            Log.d(TAG, "No saved MQTT password. Auto-connect skipped.");
+            return;
+        }
+
+        // Retrieve saved password
+        String savedPassword =
+                MqttCredentialStorage.getPassword(this);
+
+        if (savedPassword == null || savedPassword.isEmpty()) {
+            Log.e(TAG, "Unable to retrieve saved MQTT password.");
+            return;
+        }
+
+        Log.d(TAG, "Saved MQTT credentials found. Starting auto-connect.");
+
+        mqttManager.connect(savedPassword);
+    }
+
     // Configure button click listeners
     private void setupButtonListeners() {
 
@@ -144,16 +198,6 @@ public class MainActivity extends AppCompatActivity {
                 );
 
             }
-        });
-
-        btnBrokerSettings.setOnClickListener(v -> {
-
-            Intent intent = new Intent(
-                    MainActivity.this,
-                    BrokerConnectionActivity.class
-            );
-
-            startActivity(intent);
         });
     }
 

@@ -27,12 +27,51 @@ public class BrokerConnectionActivity extends AppCompatActivity {
     private Button btnBrokerDisconnect;
     private TextView btnBack;
 
+    // Password entered for the current connection attempt
+    private String pendingPassword;
+
     private final MqttManager.ConnectionListener connectionListener =
             new MqttManager.ConnectionListener() {
 
                 @Override
                 public void onConnected() {
-                    runOnUiThread(() -> updateBrokerStatus());
+
+                    runOnUiThread(() -> {
+
+                        updateBrokerStatus();
+
+                        // Save password only after successful connection
+                        if (switchRememberPassword.isChecked()
+                                && pendingPassword != null
+                                && !pendingPassword.isEmpty()) {
+
+                            boolean saved = MqttCredentialStorage.savePassword(
+                                    BrokerConnectionActivity.this,
+                                    pendingPassword
+                            );
+
+                            if (saved) {
+                                Toast.makeText(
+                                        BrokerConnectionActivity.this,
+                                        "MQTT password saved securely",
+                                        Toast.LENGTH_SHORT
+                                ).show();
+                            } else {
+                                Toast.makeText(
+                                        BrokerConnectionActivity.this,
+                                        "Unable to save MQTT password",
+                                        Toast.LENGTH_LONG
+                                ).show();
+                            }
+
+                        } else {
+                            MqttCredentialStorage.clearPassword(
+                                    BrokerConnectionActivity.this
+                            );
+                        }
+
+                        pendingPassword = null;
+                    });
                 }
 
                 @Override
@@ -42,7 +81,19 @@ public class BrokerConnectionActivity extends AppCompatActivity {
 
                 @Override
                 public void onError(String message) {
-                    runOnUiThread(() -> updateBrokerStatus());
+
+                    runOnUiThread(() -> {
+
+                        updateBrokerStatus();
+
+                        pendingPassword = null;
+
+                        Toast.makeText(
+                                BrokerConnectionActivity.this,
+                                "MQTT connection failed: " + message,
+                                Toast.LENGTH_LONG
+                        ).show();
+                    });
                 }
 
                 @Override
@@ -55,6 +106,7 @@ public class BrokerConnectionActivity extends AppCompatActivity {
                     // Not required for connection status.
                 }
             };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,7 +119,9 @@ public class BrokerConnectionActivity extends AppCompatActivity {
         mqttManager = app.getMqttManager();
 
         // Initialize UI Components
-        txtBrokerConnectionStatus = findViewById(R.id.txtBrokerConnectionStatus);
+        txtBrokerConnectionStatus =
+                findViewById(R.id.txtBrokerConnectionStatus);
+
         txtBrokerHost = findViewById(R.id.txtBrokerHost);
         txtBrokerUsername = findViewById(R.id.txtBrokerUsername);
         edtMqttPassword = findViewById(R.id.edtMqttPassword);
@@ -79,11 +133,16 @@ public class BrokerConnectionActivity extends AppCompatActivity {
         btnBrokerDisconnect = findViewById(R.id.btnBrokerDisconnect);
         btnBack = findViewById(R.id.btnBack);
 
+        // Load previously saved password
+        loadSavedCredentials();
+
         mqttManager.setConnectionListener(connectionListener);
+
         updateBrokerStatus();
 
         btnBack.setOnClickListener(v -> finish());
 
+        // CONNECT BUTTON
         btnBrokerConnect.setOnClickListener(v -> {
 
             String password = edtMqttPassword.getText().toString().trim();
@@ -95,6 +154,7 @@ public class BrokerConnectionActivity extends AppCompatActivity {
             }
 
             if (mqttManager.isConnected()) {
+
                 Toast.makeText(
                         BrokerConnectionActivity.this,
                         "Already connected to MQTT broker",
@@ -104,12 +164,16 @@ public class BrokerConnectionActivity extends AppCompatActivity {
                 return;
             }
 
+            pendingPassword = password;
+
             mqttManager.connect(password);
         });
 
+        // DISCONNECT BUTTON
         btnBrokerDisconnect.setOnClickListener(v -> {
 
             if (!mqttManager.isConnected()) {
+
                 Toast.makeText(
                         BrokerConnectionActivity.this,
                         "MQTT is already disconnected",
@@ -122,39 +186,86 @@ public class BrokerConnectionActivity extends AppCompatActivity {
             mqttManager.disconnect();
         });
 
-        switchShowPassword.setOnCheckedChangeListener((buttonView, isChecked) -> {
+        // SHOW / HIDE PASSWORD
+        switchShowPassword.setOnCheckedChangeListener(
+                (buttonView, isChecked) -> {
 
-            if (isChecked) {
+                    if (isChecked) {
 
-                edtMqttPassword.setInputType(
-                        InputType.TYPE_CLASS_TEXT |
-                                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                );
+                        edtMqttPassword.setInputType(
+                                InputType.TYPE_CLASS_TEXT |
+                                        InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                        );
 
-            } else {
+                    } else {
 
-                edtMqttPassword.setInputType(
-                        InputType.TYPE_CLASS_TEXT |
-                                InputType.TYPE_TEXT_VARIATION_PASSWORD
-                );
-            }
+                        edtMqttPassword.setInputType(
+                                InputType.TYPE_CLASS_TEXT |
+                                        InputType.TYPE_TEXT_VARIATION_PASSWORD
+                        );
+                    }
 
-            edtMqttPassword.setSelection(
-                    edtMqttPassword.getText().length()
-            );
-        });
+                    edtMqttPassword.setSelection(
+                            edtMqttPassword.getText().length()
+                    );
+                }
+        );
+
+        // REMEMBER PASSWORD
+        switchRememberPassword.setOnCheckedChangeListener(
+                (buttonView, isChecked) -> {
+
+                    if (!isChecked) {
+
+                        // Immediately clear saved credentials
+                        MqttCredentialStorage.clearPassword(
+                                BrokerConnectionActivity.this
+                        );
+
+                        Toast.makeText(
+                                BrokerConnectionActivity.this,
+                                "Saved password removed",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                }
+        );
+    }
+
+    private void loadSavedCredentials() {
+
+        String savedPassword = MqttCredentialStorage.getPassword(this);
+
+        if (savedPassword != null && !savedPassword.isEmpty()) {
+
+            edtMqttPassword.setText(savedPassword);
+
+            // Enable Remember Password without triggering its listener
+            switchRememberPassword.setChecked(true);
+
+        } else {
+
+            switchRememberPassword.setChecked(false);
+        }
     }
 
     private void updateBrokerStatus() {
 
         if (mqttManager.isConnected()) {
+
             txtBrokerConnectionStatus.setText("● CONNECTED");
+
             txtBrokerConnectionStatus.setTextColor(
-                    getColor(android.R.color.holo_green_dark));
+                    getColor(android.R.color.holo_green_dark)
+            );
+
         } else {
+
             txtBrokerConnectionStatus.setText("● DISCONNECTED");
+
             txtBrokerConnectionStatus.setTextColor(
-                    getColor(android.R.color.holo_red_dark));
+                    getColor(android.R.color.holo_red_dark)
+            );
         }
     }
 
@@ -163,4 +274,3 @@ public class BrokerConnectionActivity extends AppCompatActivity {
         super.onDestroy();
     }
 }
-
